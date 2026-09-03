@@ -19,6 +19,17 @@ describe('useFlow', () => {
     expect(result.current.caption).toBe(STEPS[1].caption);
   });
 
+  it('create → fly1 → fly2 数据球飞行（act/caption）', () => {
+    const { result } = renderHook(() => useFlow());
+    act(() => result.current.next());
+    act(() => result.current.next());
+    expect(result.current.act).toBe('fly1');
+    expect(result.current.caption).toBe(STEPS[2].caption);
+    act(() => result.current.next());
+    expect(result.current.act).toBe('fly2');
+    expect(result.current.caption).toBe(STEPS[3].caption);
+  });
+
   it('next advances one step', () => {
     const { result } = renderHook(() => useFlow());
     act(() => result.current.next());
