@@ -14,7 +14,7 @@ export default function Phone({ act, onOrder }: { act: Act; onOrder: () => void 
       {/* 屏幕 */}
       <mesh position={[0, 0.12, 0.09]}>
         <planeGeometry args={[0.7, 1.2]} />
-        <meshBasicMaterial color="#0ea5e9" />
+        <meshBasicMaterial color={act === 'done' ? '#16a34a' : '#0ea5e9'} />
       </mesh>
 
       {/* 下单按钮：仅在 idle 幕次出现 */}
@@ -23,6 +23,13 @@ export default function Phone({ act, onOrder }: { act: Act; onOrder: () => void 
           <button className="order-btn" onClick={onOrder}>
             ✓ 下单
           </button>
+        </Html>
+      )}
+
+      {/* 完成：手机亮起「已收货」 */}
+      {act === 'done' && (
+        <Html center position={[0, -0.62, 0.14]} distanceFactor={7}>
+          <div className="tag tag-ok received">✓ 已收货</div>
         </Html>
       )}
 

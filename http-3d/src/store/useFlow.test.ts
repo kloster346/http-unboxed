@@ -30,6 +30,22 @@ describe('useFlow', () => {
     expect(result.current.caption).toBe(STEPS[3].caption);
   });
 
+  it('fly2 → process → respond → done 处理/回传/完成（act/caption）', () => {
+    const { result } = renderHook(() => useFlow());
+    act(() => result.current.next()); // create
+    act(() => result.current.next()); // fly1
+    act(() => result.current.next()); // fly2
+    act(() => result.current.next()); // process
+    expect(result.current.act).toBe('process');
+    expect(result.current.caption).toBe(STEPS[4].caption);
+    act(() => result.current.next());
+    expect(result.current.act).toBe('respond');
+    expect(result.current.caption).toBe(STEPS[5].caption);
+    act(() => result.current.next());
+    expect(result.current.act).toBe('done');
+    expect(result.current.caption).toBe(STEPS[6].caption);
+  });
+
   it('next advances one step', () => {
     const { result } = renderHook(() => useFlow());
     act(() => result.current.next());

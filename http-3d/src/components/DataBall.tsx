@@ -21,7 +21,7 @@ export default function DataBall({
   const group = useRef<THREE.Group>(null);
   const progress = useRef({ value: 0 });
   const curve = useMemo(() => new THREE.CatmullRomCurve3([PHONE_POS, HUB_POS, WAREHOUSE_POS]), []);
-  const visible = act !== 'idle';
+  const visible = ['create', 'fly1', 'fly2', 'process'].includes(act);
 
   useEffect(() => {
     let tween: ReturnType<typeof gsap.to> | undefined;
