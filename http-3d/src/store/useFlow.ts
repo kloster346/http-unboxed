@@ -11,6 +11,7 @@ const AUTO_ADVANCE_MS = 2200;
 export function useFlow() {
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [scene, setScene] = useState<'main' | 'compare'>('main');
   const total = STEPS.length;
 
   const next = useCallback(() => {
@@ -29,19 +30,19 @@ export function useFlow() {
   const play = useCallback(() => setPlaying(true), []);
   const pause = useCallback(() => setPlaying(false), []);
 
-  // 自动播：播放中每 AUTO_ADVANCE_MS 推进一幕。
+  // 自动播：处于主流程时才每 AUTO_ADVANCE_MS 推进一幕（比较场景不推进幕次）。
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || scene !== 'main') return;
     const id = setInterval(() => {
       setStep((s) => Math.min(s + 1, total - 1));
     }, AUTO_ADVANCE_MS);
     return () => clearInterval(id);
-  }, [playing, total]);
+  }, [playing, scene, total]);
 
   // 到达最后一幕后自动停止播放。
   useEffect(() => {
-    if (playing && step >= total - 1) setPlaying(false);
-  }, [playing, step, total]);
+    if (playing && scene === 'main' && step >= total - 1) setPlaying(false);
+  }, [playing, scene, step, total]);
 
   const current = STEPS[step];
 
@@ -57,5 +58,7 @@ export function useFlow() {
     play,
     pause,
     isPlaying: playing,
+    scene,
+    setScene,
   };
 }

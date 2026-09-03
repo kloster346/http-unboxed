@@ -115,4 +115,29 @@ describe('useFlow', () => {
     expect(result.current.isPlaying).toBe(false);
     vi.useRealTimers();
   });
+
+  it('scene switching toggles between main and compare without disturbing step', () => {
+    const { result } = renderHook(() => useFlow());
+    expect(result.current.scene).toBe('main');
+    act(() => result.current.next());
+    act(() => result.current.setScene('compare'));
+    expect(result.current.scene).toBe('compare');
+    expect(result.current.step).toBe(1);
+    act(() => result.current.setScene('main'));
+    expect(result.current.scene).toBe('main');
+  });
+
+  it('auto-play does not advance step while in the compare scene', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useFlow());
+    act(() => result.current.next());
+    act(() => result.current.play());
+    act(() => result.current.setScene('compare'));
+    act(() => vi.advanceTimersByTime(5000));
+    expect(result.current.step).toBe(1);
+    act(() => result.current.setScene('main'));
+    act(() => vi.advanceTimersByTime(2400));
+    expect(result.current.step).toBe(2);
+    vi.useRealTimers();
+  });
 });

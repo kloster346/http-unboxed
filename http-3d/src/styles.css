@@ -1,8 +1,10 @@
 :root {
   --brand: #f97316;
+  --get: #0ea5e9;
   --ink: #e9eef5;
   --ink-soft: #93a4bd;
   --line: rgba(255, 255, 255, 0.12);
+  --card: rgba(255, 255, 255, 0.04);
 }
 
 * {
@@ -200,4 +202,133 @@ body {
   font-size: 14px;
   padding: 6px 12px;
   border-radius: 999px;
+}
+
+/* --- 顶部场景切换 --- */
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tabs button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: 7px 15px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.tabs button:hover {
+  color: var(--ink);
+}
+
+.tabs button.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+/* --- GET vs POST 对比视图 --- */
+.cmp-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 760px) {
+  .cmp-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmp-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  border-top: 6px solid var(--get);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+}
+
+.cmp-card.post {
+  border-top-color: var(--brand);
+}
+
+.cmp-title {
+  padding: 16px 20px 6px;
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--get);
+}
+
+.cmp-card.post .cmp-title {
+  color: var(--brand);
+}
+
+.cmp-stage {
+  height: 300px;
+}
+
+.cmp-stage canvas {
+  display: block;
+}
+
+.cmp-points {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px 20px 16px;
+}
+
+.cmp-points li {
+  font-size: 14px;
+  color: var(--ink);
+  margin: 8px 0;
+  position: relative;
+  padding-left: 16px;
+}
+
+.cmp-points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--get);
+}
+
+.cmp-card.post .cmp-points li::before {
+  background: var(--brand);
+}
+
+.cmp-foot {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.cmp-foot b {
+  color: var(--ink);
+}
+
+.mini-tag {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.tag-body {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
 }
