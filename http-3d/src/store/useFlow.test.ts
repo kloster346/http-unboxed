@@ -11,6 +11,14 @@ describe('useFlow', () => {
     expect(result.current.total).toBe(STEPS.length);
   });
 
+  it('idle → create 生成数据球并贴面单（act/caption）', () => {
+    const { result } = renderHook(() => useFlow());
+    expect(result.current.act).toBe('idle');
+    act(() => result.current.next());
+    expect(result.current.act).toBe('create');
+    expect(result.current.caption).toBe(STEPS[1].caption);
+  });
+
   it('next advances one step', () => {
     const { result } = renderHook(() => useFlow());
     act(() => result.current.next());

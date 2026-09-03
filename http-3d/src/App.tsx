@@ -15,7 +15,7 @@ export default function App() {
       </header>
       <div className="stage">
         <Canvas camera={{ position: [4, 3, 6], fov: 50 }}>
-          <Scene act={flow.act} />
+          <Scene act={flow.act} onOrder={flow.next} />
         </Canvas>
       </div>
       <div className="dock">

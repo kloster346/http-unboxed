@@ -127,3 +127,65 @@ body {
   min-height: 34px;
   padding-top: 14px;
 }
+
+/* --- 3D 场景内的 DOM 覆盖（drei Html）--- */
+.order-btn {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+}
+
+.order-btn:hover {
+  background: #ea580c;
+}
+
+.node-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #cdd7e6;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ball-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transform: translateX(2px);
+}
+
+.ball-tags .tag {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.tag-json {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid #fbbf24;
+}
+
+.tag-url {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid #fb923c;
+}
+
+.tag-header {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid #34d399;
+}
