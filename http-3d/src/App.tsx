@@ -32,8 +32,8 @@ export default function App() {
       {flow.scene === 'main' ? (
         <>
           <div className="stage">
-            <Canvas camera={{ position: [4, 3, 6], fov: 50 }}>
-              <Scene act={flow.act} onOrder={flow.next} />
+            <Canvas dpr={[1, 1.5]} camera={{ position: [4, 3, 6], fov: 50 }}>
+              <Scene act={flow.act} onOrder={flow.next} playing={flow.isPlaying} />
             </Canvas>
           </div>
           <div className="dock">

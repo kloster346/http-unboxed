@@ -9,7 +9,7 @@ export default function GetPost() {
       <div className="cmp-card get">
         <div className="cmp-title">📮 GET · 查 = 去快递柜取件</div>
         <div className="cmp-stage">
-          <Canvas camera={{ position: [0, 1.4, 4.2], fov: 45 }}>
+          <Canvas dpr={[1, 1.5]} camera={{ position: [0, 1.4, 4.2], fov: 45 }}>
             <GetMini />
           </Canvas>
         </div>
@@ -23,7 +23,7 @@ export default function GetPost() {
       <div className="cmp-card post">
         <div className="cmp-title">🏪 POST · 增/改 = 去前台寄件</div>
         <div className="cmp-stage">
-          <Canvas camera={{ position: [0, 1.4, 4.2], fov: 45 }}>
+          <Canvas dpr={[1, 1.5]} camera={{ position: [0, 1.4, 4.2], fov: 45 }}>
             <PostMini />
           </Canvas>
         </div>
