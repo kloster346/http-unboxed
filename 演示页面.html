@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>给 PM 讲 HTTP/API：一次看懂（快递类比版）</title>
+<style>
+  :root{
+    --brand:#f97316;   /* 寄件橙 */
+    --brand-2:#fb923c;
+    --get:#0ea5e9;     /* 取件蓝 */
+    --get-2:#38bdf8;
+    --ink:#1f2937;
+    --ink-soft:#6b7280;
+    --line:#e5e7eb;
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --ok:#16a34a;
+    --err:#dc2626;
+    --warn:#d97706;
+    --shadow:0 4px 16px rgba(15,23,42,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px;}
+
+  /* top bar */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .brand{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;}
+  .brand .logo{font-size:22px;}
+  .chapnav{display:flex;gap:6px;flex-wrap:wrap;}
+  .chapnav button{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    padding:7px 13px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;
+    transition:.15s;
+  }
+  .chapnav button:hover{border-color:var(--brand);color:var(--brand);}
+  .chapnav button.active{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .chapnav button .idx{opacity:.6;margin-right:4px;font-weight:700;}
+
+  header.hero{text-align:center;padding:26px 0 8px;}
+  header.hero h1{margin:0;font-size:26px;letter-spacing:.5px;}
+  header.hero p{margin:8px 0 0;color:var(--ink-soft);font-size:14px;}
+
+  /* cards & sections */
+  .chap{display:none;}
+  .chap.active{display:block;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px 22px;margin:18px 0;}
+  .card h2{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:8px;}
+  .card .sub{color:var(--ink-soft);font-size:14px;margin:0 0 14px;}
+  .pill{display:inline-block;background:#fff7ed;color:var(--brand);font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid #fed7aa;}
+
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;justify-content:center;padding:8px 0;}
+  .fnode{flex:1;min-width:180px;background:#fff;border:2px solid var(--line);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:.15s;position:relative;}
+  .fnode:hover{border-color:var(--brand);}
+  .fnode.sel{border-color:var(--brand);background:#fff8f0;}
+  .fnode .em{font-size:34px;}
+  .fnode .t{font-weight:800;margin-top:6px;font-size:16px;}
+  .fnode .d{color:var(--ink-soft);font-size:13px;margin-top:4px;}
+  .fnode .hint{font-size:12px;color:var(--brand);font-weight:700;margin-top:8px;opacity:.8;}
+  .farrow{display:flex;align-items:center;font-size:26px;color:var(--brand);padding:0 2px;}
+  .fnote{display:none;background:#fff8f0;border:1px dashed var(--brand-2);border-radius:12px;padding:12px 16px;margin-top:12px;font-size:14px;}
+  .fnote.show{display:block;}
+
+  /* concept cards + face-slip */
+  .concept-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start;}
+  @media(max-width:760px){.concept-grid{grid-template-columns:1fr;}}
+  .conList{display:flex;flex-direction:column;gap:10px;}
+  .conBtn{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s;}
+  .conBtn:hover{border-color:var(--brand-2);}
+  .conBtn.sel{border-color:var(--brand);background:#fff8f0;}
+  .conBtn .n{font-weight:800;font-size:15px;}
+  .conBtn .d{color:var(--ink-soft);font-size:13px;margin-top:3px;}
+  .conBtn .exp{display:none;color:var(--ink);font-size:13px;margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .conBtn.sel .exp{display:block;}
+
+  /* express slip mock */
+  .slip{background:#fffdf5;border:1.5px solid #fcd34d;border-radius:14px;overflow:hidden;position:relative;}
+  .slip-head{background:#fff7dc;padding:9px 16px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+  .slip-head .tag{font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;padding:3px 8px;border-radius:999px;}
+  .slip-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+  .slip-zone{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;transition:.2s;}
+  .slip-zone.hl{border-color:var(--brand);background:#fff4e6;box-shadow:0 0 0 3px rgba(249,115,22,.12);}
+  .slip-zone .lab{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--ink-soft);text-transform:uppercase;}
+  .slip-zone .val{font-family:Consolas,"Courier New",monospace;font-size:14px;margin-top:4px;color:var(--ink);}
+  .slip-zone .val small{color:var(--ink-soft);font-family:inherit;}
+
+  /* GET / POST simulators */
+  .sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:760px){.sim-grid{grid-template-columns:1fr;}}
+  .sim{background:#fff;border-radius:16px;overflow:hidden;border:2px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .sim.get{border-top:5px solid var(--get);}
+  .sim.post{border-top:5px solid var(--brand);}
+  .sim-head{padding:15px 18px 10px;font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .sim.get .sim-head{color:var(--get);}
+  .sim.post .sim-head{color:var(--brand);}
+  .sim-head .sub2{font-weight:600;font-size:12px;color:var(--ink-soft);margin-left:auto;}
+  .sim-body{padding:4px 18px 14px;font-family:Consolas,monospace;font-size:13px;color:var(--ink);flex:1;}
+  .sim-body .row{margin:5px 0;}
+  .sim-body .k{color:var(--ink-soft);font-weight:700;}
+  .sim-body .m{display:inline-block;padding:2px 8px;border-radius:6px;font-weight:800;}
+  .sim.get .m{background:#e0f2fe;color:var(--get);}
+  .sim.post .m{background:#ffedd5;color:var(--brand);}
+  .sim-traits{padding:0 18px 6px;font-size:12px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:8px;}
+  .sim-traits span{border:1px dashed var(--line);padding:2px 9px;border-radius:999px;font-weight:600;}
+  .sim-btn{margin:12px 18px 16px;padding:11px 0;border:none;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;color:#fff;transition:.15s;}
+  .sim.get .sim-btn{background:var(--get);} .sim.get .sim-btn:hover{background:#0284c7;}
+  .sim.post .sim-btn{background:var(--brand);} .sim.post .sim-btn:hover{background:#ea580c;}
+  .sim-res{display:none;margin:0 18px 16px;background:#f1f5f9;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;}
+  .sim-res.show{display:block;animation:fade .3s;}
+  .sim-res .st{font-weight:800;margin-bottom:6px;}
+  .sim.get .sim-res .st{color:var(--get);}
+  .sim.post .sim-res .st{color:var(--brand);}
+  .sim-res pre{margin:0;font-family:Consolas,monospace;background:#0f172a;color:#e2e8f0;padding:10px 12px;border-radius:8px;overflow:auto;font-size:12px;}
+  .diff-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+  .diff-tbl th,.diff-tbl td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
+  .diff-tbl th{background:#f9fafb;}
+
+  /* error cards */
+  .err-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:760px){.err-grid{grid-template-columns:1fr;}}
+  .err-card{border:1px solid var(--line);border-bottom:4px solid var(--err);border-radius:12px;background:#fff;padding:14px 16px;}
+  .err-card .code{font-size:22px;font-weight:900;color:var(--err);font-family:Consolas,monospace;}
+  .err-card .name{font-weight:800;margin:2px 0 8px;}
+  .err-card .why,.err-card .fix{font-size:13px;margin-top:6px;}
+  .err-card .why b,.err-card .fix b{color:var(--warn);font-weight:800;}
+
+  /* playground */
+  .pg{background:#fff;border:2px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 20px;margin-top:8px;}
+  .pg label{display:block;font-weight:700;font-size:13px;margin:12px 0 4px;}
+  .pg label .em{color:var(--ink-soft);font-weight:500;}
+  .pg input[type=text]{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:Consolas,monospace;font-size:13px;background:#fafafa;}
+  .pg input:focus,.pg textarea:focus{border-color:var(--brand);outline:none;}
+  .pg textarea{width:100%;min-height:78px;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:Consolas,monospace;font-size:13px;background:#fafafa;resize:vertical;}
+  .pg-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .pg-send{background:var(--brand);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-weight:800;font-size:14px;cursor:pointer;}
+  .pg-send:hover{background:#ea580c;}
+  .pg-reset{background:#fff;color:var(--ink-soft);border:1.5px solid var(--line);border-radius:9px;padding:10px 18px;font-weight:700;cursor:pointer;}
+  .pg-reset:hover{border-color:var(--ink-soft);}
+  .pg-status{display:none;margin-top:14px;border-radius:10px;padding:13px 16px;font-size:14px;}
+  .pg-status.show{display:block;animation:fade .3s;}
+  .pg-status.ok{background:#f0fdf4;border:1.5px solid #bbf7d0;color:#14532d;}
+  .pg-status.err{background:#fef2f2;border:1.5px solid #fecaca;color:#7f1d1d;}
+  .pg-status.warn{background:#fffbeb;border:1.5px solid #fde68a;color:#78350f;}
+  .pg-status .strip{font-weight:800;font-size:15px;margin-bottom:4px;}
+
+  /* comparison table */
+  .cmp{width:100%;border-collapse:collapse;font-size:14px;}
+  .cmp th{background:var(--brand);color:#fff;text-align:left;padding:11px 12px;font-weight:800;}
+  .cmp th:first-child{border-top-left-radius:10px;}
+  .cmp th:last-child{border-top-right-radius:10px;}
+  .cmp td,.cmp th{border:1px solid var(--line);padding:11px 12px;vertical-align:top;}
+  .cmp tbody tr:nth-child(even){background:#fafafa;}
+  .cmp tbody tr:hover{background:#fff7ed;}
+  .cmp .term{font-weight:800;}
+  .cmp .term em{display:block;font-style:normal;font-weight:500;color:var(--ink-soft);font-size:12px;margin-top:2px;}
+  .cmp .method{display:inline-block;font-weight:800;padding:3px 9px;border-radius:7px;font-size:12px;}
+  .m-get{background:#e0f2fe;color:var(--get);}
+  .m-post{background:#ffedd5;color:var(--brand);}
+
+  /* footer pager */
+  .pager{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border-top:1px solid var(--line);}
+  .pager-in{max-width:1080px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .pbar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:0 14px;}
+  .pbar > i{display:block;height:100%;background:var(--brand);border-radius:999px;transition:width .25s;width:0;}
+  .pbar-label{font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .navbtn{border:1px solid var(--line);background:#fff;padding:9px 18px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;transition:.15s;}
+  .navbtn:hover:not(:disabled){border-color:var(--brand);color:var(--brand);}
+  .navbtn:disabled{opacity:.4;cursor:not-allowed;}
+  .navbtn.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .navbtn.primary:hover:not(:disabled){background:#ea580c;color:#fff;}
+
+  .speech{font-size:13px;color:var(--ink-soft);background:#f1f5f9;border-left:4px solid var(--brand-2);padding:9px 12px;border-radius:0 8px 8px 0;margin-top:8px;}
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="logo">📦</span> 给产品经理讲：HTTP/API 一次看懂</div>
+    <nav class="chapnav" id="chapnav">
+      <button class="active" onclick="showChap(0)"><span class="idx">1</span>全流程</button>
+      <button onclick="showChap(1)"><span class="idx">2</span>四大概念</button>
+      <button onclick="showChap(2)"><span class="idx">3</span>GET↔POST</button>
+      <button onclick="showChap(3)"><span class="idx">4</span>避坑指南</button>
+      <button onclick="showChap(4)"><span class="idx">5</span>对照表</button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+<header class="hero">
+  <h1>🚚 一张快递单，讲懂前后端通信</h1>
+  <p>你不懂代码没关系——把「前端请求」想成「寄快递」，把「后端响应」想成「仓库回签收单」，下面所有名词都是快递单上的一个小栏目。跟着点一遍就懂了。</p>
+</header>
+
+<!-- ================= CHAPTER 1: 全流程 ================= -->
+<section class="chap active" id="chap0">
+  <div class="card">
+    <h2>🖍 先看整体：一次通信 = 寄一次快递</h2>
+    <p class="sub">点下面的任一站，看看它代表什么。</p>
+    <div class="flow">
+      <div class="fnode" onclick="pickFlow(0)">
+        <div class="em">📱</div>
+        <div class="t">手机/你的 App</div>
+        <div class="d">就是「你」——发出请求的一方</div>
+        <div class="hint">点我看解释</div>
+      </div>
+      <div class="farrow">➜</div>
+      <div class="fnode" onclick="pickFlow(1)">
+        <div class="em">🏬</div>
+        <div class="t">快递站（网络）</div>
+        <div class="d">负责中转、分拣、送达</div>
+        <div class="hint">点我看解释</div>
+      </div>
+      <div class="farrow">➜</div>
+      <div class="fnode" onclick="pickFlow(2)">
+        <div class="em">🏬🏬</div>
+        <div class="t">仓库（服务器）</div>
+        <div class="d">真正接收、处理、回执的地方</div>
+        <div class="hint">点我看解释</div>
+      </div>
+    </div>
+    <div class="fnote" id="fnote"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔁 记住这两句就够</h2>
+    <div class="tag-row">
+      <span class="pill">前端请求 = 填快递单发货</span>
+      <span class="pill">后端响应 = 仓库回传签收单</span>
+    </div>
+    <p class="speech">💡 下面的 URL、Header、Body、JSON、GET、POST——全是这张快递单上的不同栏目，一格一格看就行。</p>
+  </div>
+</section>
+
+<!-- ================= CHAPTER 2: 四大概念 ================= -->
+<section class="chap" id="chap1">
+  <div class="card">
+    <h2>🧩 四个名词 = 快递单上的四个栏目</h2>
+    <p class="sub">先点左边的概念，右边那张「快递面单」会亮起对应栏目。</p>
+    <div class="concept-grid">
+      <div class="conList" id="conList">
+        <button class="conBtn sel" onclick="pickConcept(0)" id="cb0">
+          <span class="n">🔗 URL（地址栏）</span>
+          <span class="d">快递的「收件地址」</span>
+          <span class="exp">前半段是哪个园区（域名），后半段是几号楼几零几（路径）。问号后面的参数 <code>?page=1</code> 相当于「备注栏」，是给快递员看的分拣小标签。</span>
+        </button>
+        <button class="conBtn" onclick="pickConcept(1)" id="cb1">
+          <span class="n">📋 Header（请求头）</span>
+          <span class="d">面单上「外露信息」</span>
+          <span class="exp">寄件人手机号、实名认证、加急标识——这些是给快递员看的「元数据」。比如登录令牌 Token（相当于身份证）、数据格式声明（告诉服务器「我发的是中文还是英文」）。<b>Header 负责「怎么寄」：验明正身 + 运输规格。</b></span>
+        </button>
+        <button class="conBtn" onclick="pickConcept(2)" id="cb2">
+          <span class="n">📦 Body（请求体）</span>
+          <span class="d">包裹里的「实际货物」</span>
+          <span class="exp">只有「寄件」（POST/PUT）才需要填；如果是「取件」（GET），包裹是空的。</span>
+        </button>
+        <button class="conBtn" onclick="pickConcept(3)" id="cb3">
+          <span class="n">🗂 JSON</span>
+          <span class="d">包裹里的「标准化填充物」</span>
+          <span class="exp">像 <code>{&quot;user&quot;:&quot;张三&quot;,&quot;price&quot;:99}</code> 这种「键值对」清单，前后端都按这份清单拆包，比乱塞容易整理。字段名写错（把 <code>userId</code> 写成 <code>userID</code>）等于把收件人写错，仓库会拒收（报错）。</span>
+        </button>
+      </div>
+
+      <div class="slip">
+        <div class="slip-head"><span>📦 快递面单（一次请求）</span><span class="tag">你填的 = 前端请求</span></div>
+        <div class="slip-body">
+          <div class="slip-zone hl" id="z0">
+            <div class="lab">收件地址 · URL</div>
+            <div class="val">https://api.xxx.com/order <small>?page=1（备注栏）</small></div>
+          </div>
+          <div class="slip-zone" id="z1">
+            <div class="lab">外露信息 · Header</div>
+            <div class="val">Token: xxx（身份证）· Content-Type: application/json（格式声明）</div>
+          </div>
+          <div class="slip-zone" id="z2">
+            <div class="lab">货物 · Body</div>
+            <div class="val">{ &quot;user&quot;: &quot;张三&quot;, &quot;price&quot;: 99 }</div>
+          </div>
+          <div class="slip-zone" id="z3">
+            <div class="lab">说明书 · JSON</div>
+            <div class="val">键值对清单，前后端按它「拆包」/「装包」</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHAPTER 3: GET vs POST ================= -->
+<section class="chap" id="chap2">
+  <div class="card">
+    <h2>⚔️ 灵魂拷问区：GET 和 POST 到底差在哪</h2>
+    <p class="sub">点「发送请求」，看两个场景的结果区别。</p>
+
+    <div class="sim-grid">
+      <!-- GET -->
+      <div class="sim get">
+        <div class="sim-head"><span>📮 去快递柜取件</span><span class="sub2">GET = 查</span></div>
+        <div class="sim-body">
+          <div class="row"><span class="k">URL</span> <span class="m">GET</span> https://api.xxx.com/products?page=1</div>
+          <div class="row"><span class="k">Body</span> 空（取件不带包裹）</div>
+          <div class="row"><span class="k">取件码</span> 直接写在地址栏上（?page=1）</div>
+        </div>
+        <div class="sim-traits"><span>⚠️ 明文可见</span><span>📏 有长度限制</span><span>♻️ 幂等（取一次不多一个）</span></div>
+        <button class="sim-btn" onclick="getSend()">▶ 发送请求（去取件）</button>
+        <div class="sim-res" id="g-res">
+          <div class="st">✅ 200 —— 快递柜吐出来一份商品清单</div>
+          <pre id="g-pre">{"code":0,"data":{"list":["商品A","商品B","商品C"]}}</pre>
+        </div>
+      </div>
+
+      <!-- POST -->
+      <div class="sim post">
+        <div class="sim-head"><span>🏪 去前台寄件</span><span class="sub2">POST = 增/改</span></div>
+        <div class="sim-body">
+          <div class="row"><span class="k">URL</span> <span class="m">POST</span> https://api.xxx.com/order</div>
+          <div class="row"><span class="k">Header</span> Token: xxx（身份证，验明正身）</div>
+          <div class="row"><span class="k">Body</span> { &quot;user&quot;:&quot;张三&quot;, &quot;price&quot;:99 }</div>
+        </div>
+        <div class="sim-traits"><span>🙈 货物藏在包里</span><span>📦 能传大体积（图片/长文本）</span><span>🔁 非幂等（寄一次多一个）</span></div>
+        <button class="sim-btn" onclick="postSend()">▶ 发送请求（去寄件）</button>
+        <div class="sim-res" id="p-res">
+          <div class="st">✅ 200 —— 仓库收到并回传「签收单」</div>
+          <pre id="p-pre">{"code":0,"orderId":"o_20250101","msg":"下单成功"}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <h2 style="font-size:16px;">📊 一张表记住差异</h2>
+      <table class="diff-tbl">
+        <thead><tr><th>对比项</th><th>GET（取件）</th><th>POST（寄件）</th></tr></thead>
+        <tbody>
+          <tr><td>干什么</td><td>查 / 读</td><td>增 / 改</td></tr>
+          <tr><td>数据放哪</td><td>地址栏 URL 上</td><td>包裹 Body 里</td></tr>
+          <tr><td>有包裹吗</td><td>无</td><td>有</td></tr>
+          <tr><td>安全</td><td>明文，能被看到</td><td>藏在包里，较安全</td></tr>
+          <tr><td>重复执行</td><td>幂等（结果一样）</td><td>非幂等（会多一份）</td></tr>
+        </tbody>
+      </table>
+      <p class="speech">💡 前端开发 90% 只用 GET 和 POST。剩下 PUT（改全部）/PATCH（改部分）/DELETE（删）是特殊场景，知道概念即可。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHAPTER 4: 避坑指南 ================= -->
+<section class="chap" id="chap3">
+  <div class="card">
+    <h2>🚨 避坑指南：三个高频报错，背下来</h2>
+    <p class="sub">先看三张报错卡，再到底下「动手台」亲手踩一遍。</p>
+    <div class="err-grid">
+      <div class="err-card">
+        <div class="code">400</div>
+        <div class="name">请求体/头格式不对</div>
+        <div class="why"><b>常见因</b>：JSON 多了个逗号、少了个引号</div>
+        <div class="fix"><b>怎么修</b>：检查 Body 里的 JSON 逗号、花括号、引号是否成对</div>
+      </div>
+      <div class="err-card">
+        <div class="code">401 / 403</div>
+        <div class="name">没身份 / 没权限</div>
+        <div class="why"><b>常见因</b>：Header 里的登录 Token 失效或没带</div>
+        <div class="fix"><b>怎么修</b>：重新登录，拿新 Token 再发</div>
+      </div>
+      <div class="err-card">
+        <div class="code">404</div>
+        <div class="name">找不到这个接口</div>
+        <div class="why"><b>常见因</b>：URL 路径单词拼错了（order→orde）</div>
+        <div class="fix"><b>怎么修</b>：检查地址栏路径拼写</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🛠 动手台：把这三处弄坏，看它怎么报错</h2>
+    <p class="sub">默认是「正确示例」。试着改坏下面的 URL / Token / Body，再点发送。</p>
+    <div class="pg">
+      <label>🌐 URL 收件地址 <span class="em">（试试把 order 拼成 orde）</span></label>
+      <input type="text" id="pg-url" value="https://api.xxx.com/order">
+      <label>🪪 Header · Token <span class="em">（试试删掉，看 401）</span></label>
+      <input type="text" id="pg-token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9">
+      <label>📦 Body · JSON <span class="em">（试试多加一个逗号）</span></label>
+      <textarea id="pg-body">{"user":"张三","price":99}</textarea>
+      <div class="pg-actions">
+        <button class="pg-send" onclick="sendPlayground()">▶ 发送</button>
+        <button class="pg-reset" onclick="resetPlayground()">↺ 恢复正确示例</button>
+      </div>
+      <div class="pg-status" id="pg-status"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHAPTER 5: 对照表 ================= -->
+<section class="chap" id="chap4">
+  <div class="card">
+    <h2>📋 终极对照表（可拍照/截图带走）</h2>
+    <p class="sub">左边是术语，右边是你们公司实际业务的例子。以后跟开发提需求，直接照着说。</p>
+    <table class="cmp">
+      <thead><tr><th>术语</th><th>快递类比</th><th>业务例子 @ 电商</th></tr></thead>
+      <tbody>
+        <tr><td class="term">URL<em>收件地址</em></td><td>园区 + 几号楼</td><td>获取商品列表：<span class="method m-get">GET</span> + URL 参数</td></tr>
+        <tr><td class="term">Header<em>外露信息</em></td><td>寄件人/实名/加急</td><td>提交订单：带用户 Token（验身份）</td></tr>
+        <tr><td class="term">Body<em>包裹货物</em></td><td>实际货物</td><td>提交订单：JSON 订单数据</td></tr>
+        <tr><td class="term">JSON<em>标准化填充物</em></td><td>说明书 / 清单</td><td>订单数据格式 <code>{"user":"张三","price":99}</code></td></tr>
+        <tr><td class="term">GET<em>去取件</em></td><td>查</td><td>获取商品列表 / 查订单详情：<span class="method m-get">GET</span></td></tr>
+        <tr><td class="term">POST<em>去寄件</em></td><td>增/改</td><td>提交订单：<span class="method m-post">POST</span> + Header( Token ) + Body( JSON )</td></tr>
+      </tbody>
+    </table>
+    <p class="speech">💡 以后别提「我要调这个接口」，要说「<b>调这个 URL 路径的 POST 接口，Body 里传 JSON 格式的订单数据，Header 里带用户 Token</b>」。开发一听就懂。</p>
+  </div>
+</section>
+
+</div><!-- /.wrap -->
+
+<footer class="pager">
+  <div class="pager-in">
+    <button class="navbtn" id="prevbtn" onclick="goPrev()">‹ 上一页</button>
+    <div class="pbar"><i id="pbarfill"></i></div>
+    <span class="pbar-label" id="pblabel">第 1 / 5 章</span>
+    <button class="navbtn primary" id="nextbtn" onclick="goNext()">下一页 ›</button>
+  </div>
+</footer>
+
+<script>
+  var CHAPS = 5;
+  var cur = 0;
+  var flowSel = -1;
+  var conSel = 0;
+
+  function showChap(i){
+    cur = i;
+    var secs = document.querySelectorAll('.chap');
+    for(var k=0;k<secs.length;k++){ secs[k].classList.remove('active'); }
+    document.getElementById('chap'+i).classList.add('active');
+
+    var tabs = document.querySelectorAll('#chapnav button');
+    for(var j=0;j<tabs.length;j++){ tabs[j].classList.toggle('active', j===i); }
+
+    document.getElementById('prevbtn').disabled = (i===0);
+    document.getElementById('nextbtn').disabled = (i===CHAPS-1);
+    document.getElementById('nextbtn').textContent = (i===CHAPS-1) ? '完成 ✓' : '下一页 ›';
+    document.getElementById('pbarfill').style.width = ((i+1)/CHAPS*100) + '%';
+    document.getElementById('pblabel').textContent = '第 ' + (i+1) + ' / ' + CHAPS + ' 章';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function goPrev(){ if(cur>0) showChap(cur-1); }
+  function goNext(){ if(cur<CHAPS-1) showChap(cur+1); }
+
+  /* chapter 1 flow */
+  var flowData = [
+    {t:'📱 手机/你的 App = 前端', d:'你填快递单、点寄出，这就是「前端请求」。你只管发出去，不知道里面怎么跑。'},
+    {t:'🏬 快递站 = 网络/中转', d:'负责把「请求」按收件地址（URL）送到正确的园区（服务器），中途可能查实名、规格（Header）。'},
+    {t:'🏬🏬 仓库 = 后端服务器', d:'真正收货、拆包（解析 Body/JSON）、处理业务，然后回一份「签收单」（响应）给你。'}
+  ];
+  function pickFlow(i){
+    flowSel = (flowSel===i)?-1:i;
+    var nodes = document.querySelectorAll('.fnode');
+    for(var k=0;k<nodes.length;k++){ nodes[k].classList.toggle('sel', k===flowSel); }
+    var note = document.getElementById('fnote');
+    if(flowSel>=0){
+      note.innerHTML = '<b>'+flowData[flowSel].t+'</b>　'+flowData[flowSel].d;
+      note.classList.add('show');
+    }else{
+      note.classList.remove('show');
+    }
+  }
+
+  /* chapter 2 concept -> highlight slip zone */
+  function pickConcept(i){
+    conSel = i;
+    for(var k=0;k<4;k++){
+      document.getElementById('cb'+k).classList.toggle('sel', k===i);
+      document.getElementById('z'+k).classList.toggle('hl', k===i);
+    }
+  }
+
+  /* chapter 3 simulators */
+  function getSend(){
+    var r = document.getElementById('g-res');
+    r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
+  }
+  function postSend(){
+    var r = document.getElementById('p-res');
+    r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
+  }
+
+  /* chapter 4 playground */
+  function setPgStatus(kind, html){
+    var box = document.getElementById('pg-status');
+    box.className = 'pg-status show ' + kind;
+    box.innerHTML = html;
+  }
+  function resetPlayground(){
+    document.getElementById('pg-url').value = 'https://api.xxx.com/order';
+    document.getElementById('pg-token').value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+    document.getElementById('pg-body').value = '{"user":"张三","price":99}';
+    var box = document.getElementById('pg-status');
+    box.className = 'pg-status'; box.innerHTML = '';
+  }
+  function sendPlayground(){
+    var url = document.getElementById('pg-url').value.trim();
+    var token = document.getElementById('pg-token').value.trim();
+    var body = document.getElementById('pg-body').value;
+
+    // 1) 400: JSON 格式不对
+    var parsed;
+    try{ parsed = JSON.parse(body); }
+    catch(e){
+      setPgStatus('err',
+        '<div class="strip">❌ 400 · 请求体格式不对</div>'+
+        'Body 里的 <b>JSON 格式坏了</b>（比如多了逗号、少引号、花括号没配对）。服务器没法拆包。<br>'+
+        '<b>怎么修</b>：检查 Body 的逗号、引号、花括号是否成对。');
+      return;
+    }
+    // 2) 404: URL 路径拼错
+    if(url.indexOf('order')===-1){
+      setPgStatus('err',
+        '<div class="strip">❌ 404 · 找不到这个接口</div>'+
+        'URL 地址栏的<b>路径拼错了</b>（把 order 写成其他），仓库——也就是服务器——没这个园区/门口。<br>'+
+        '<b>怎么修</b>：检查地址栏路径单词拼写。');
+      return;
+    }
+    // 3) 401/403: token 缺失或失效
+    if(!token){
+      setPgStatus('err',
+        '<div class="strip">❌ 401/403 · 未授权</div>'+
+        'Header 里的 <b>Token（身份证）掉了或过期</b>，门卫不让进。<br>'+
+        '<b>怎么修</b>：重新登录获取新 Token，再放到 Header 里发。');
+      return;
+    }
+    // ok
+    setPgStatus('ok',
+      '<div class="strip">✅ 200 · 下单成功</div>'+
+      '仓库收到包裹并签收。服务器返回：<pre style="margin-top:6px;">'+JSON.stringify(parsed)+'</pre>'+
+      '（这个订单就是你在 Body 里用 JSON 装的货。）');
+  }
+</script>
+</body>
+</html>
