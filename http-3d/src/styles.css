@@ -1,0 +1,129 @@
+:root {
+  --brand: #f97316;
+  --ink: #e9eef5;
+  --ink-soft: #93a4bd;
+  --line: rgba(255, 255, 255, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  color: var(--ink);
+  background: #0b1220;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 14px 16px 20px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 14px;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.brand .logo {
+  font-size: 24px;
+}
+
+.brand small {
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.stage {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.stage canvas {
+  display: block;
+}
+
+.dock {
+  padding: 14px 2px 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink);
+  padding: 9px 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: 0.15s;
+}
+
+.controls button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.controls button.play {
+  background: var(--brand);
+  border-color: var(--brand);
+  min-width: 120px;
+}
+
+.controls button.play:hover {
+  background: #ea580c;
+}
+
+.controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.count {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 54px;
+  text-align: center;
+}
+
+.caption {
+  text-align: center;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 700;
+  min-height: 34px;
+  padding-top: 14px;
+}
