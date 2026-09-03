@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { Html } from '@react-three/drei';
+import { Html, Trail } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
 import type { Act } from '../data/steps';
 import { PHONE_POS, HUB_POS, WAREHOUSE_POS } from '../data/positions';
 import type { MutableRefObject } from 'react';
+
+const BALL_COLOR = '#f97316';
+const BALL_EMISSIVE = '#ea580c';
+const TRAIL = { color: '#f97316', width: 0.5, length: 5 };
 
 /**
  * 数据球（工单 03）：create 及之后出现，沿轨迹从手机飞到快递站、再到仓库。
@@ -54,10 +58,12 @@ export default function DataBall({
     <group ref={group} position={[PHONE_POS.x, PHONE_POS.y, PHONE_POS.z]}>
       {visible && (
         <>
-          <mesh>
-            <sphereGeometry args={[0.34, 32, 32]} />
-            <meshStandardMaterial color="#38bdf8" emissive="#0ea5e9" emissiveIntensity={0.7} />
-          </mesh>
+          <Trail width={TRAIL.width} length={TRAIL.length} color={TRAIL.color}>
+            <mesh>
+              <sphereGeometry args={[0.34, 32, 32]} />
+              <meshStandardMaterial color={BALL_COLOR} emissive={BALL_EMISSIVE} emissiveIntensity={0.7} />
+            </mesh>
+          </Trail>
           <Html center position={[0.6, 0.05, 0]} distanceFactor={8}>
             <div className="ball-tags">
               <div className="tag tag-json">JSON</div>

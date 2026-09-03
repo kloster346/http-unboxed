@@ -49,7 +49,7 @@ export default function Signature({
         <>
           <mesh>
             <sphereGeometry args={[0.32, 32, 32]} />
-            <meshStandardMaterial color="#38bdf8" emissive="#16a34a" emissiveIntensity={0.9} />
+            <meshStandardMaterial color="#22c55e" emissive="#16a34a" emissiveIntensity={0.9} />
           </mesh>
           <Html center position={[0.6, 0.05, 0]} distanceFactor={8}>
             <div className="ball-tags">

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { useDemoSlide } from './useDemoSlide';
+import BloomEffect from '../components/BloomEffect';
 
 /** POST 小场景：去前台寄件——把货(数据)放在 Body，Header 带 Token。 */
 export default function PostMini() {
@@ -42,6 +43,7 @@ export default function PostMini() {
         <planeGeometry args={[12, 8]} />
         <meshStandardMaterial color="#111827" />
       </mesh>
+      <BloomEffect />
     </>
   );
 }

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { useDemoSlide } from './useDemoSlide';
+import BloomEffect from '../components/BloomEffect';
 
 /** GET 小场景：去快递柜取件——把取件码(参数)写在 URL，Body 空、无货物。 */
 export default function GetMini() {
@@ -50,6 +51,7 @@ export default function GetMini() {
         <planeGeometry args={[12, 8]} />
         <meshStandardMaterial color="#111827" />
       </mesh>
+      <BloomEffect />
     </>
   );
 }

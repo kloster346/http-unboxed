@@ -9,6 +9,7 @@ import Trajectory from './Trajectory';
 import CameraRig from './CameraRig';
 import Processing from './Processing';
 import Signature from './Signature';
+import BloomEffect from './BloomEffect';
 
 /**
  * 主流程 3D 场景（工单 04）：手机 + 快递站(网络) + 数据球(飞行) + 仓库，
@@ -37,6 +38,6 @@ export default function Scene({ act, onOrder }: { act: Act; onOrder: () => void 
         <meshStandardMaterial color="#111827" />
       </mesh>
       <gridHelper args={[24, 24, '#1f2733', '#161e2b']} position={[0, 0, 0]} />
-    </>
+      <BloomEffect />    </>
   );
 }
