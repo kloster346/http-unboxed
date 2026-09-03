@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>给 PM 讲 HTTP/API：一次通信是怎么走的（动画版）</title>
+<style>
+  :root{
+    --brand:#f97316; --brand-2:#fb923c;
+    --get:#0ea5e9; --ink:#1f2937; --ink-soft:#6b7280;
+    --line:#e5e7eb; --bg:#0b1220; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);
+    background:linear-gradient(180deg,#0b1220 0%,#0f1b2d 60%,#12233a 100%);min-height:100vh;}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 60px;}
+
+  /* header */
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#fff;padding:6px 0 14px;}
+  .brand{font-weight:800;font-size:20px;display:flex;align-items:center;gap:9px;}
+  .brand .logo{font-size:24px;}
+  .brand small{color:#93a4bd;font-weight:500;font-size:13px;}
+  .tabs{display:flex;gap:8px;}
+  .tabs button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#cdd7e6;
+    padding:8px 15px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s;}
+  .tabs button:hover{color:#fff;}
+  .tabs button.active{background:var(--brand);border-color:var(--brand);color:#fff;}
+
+  /* player */
+  .player{margin-top:4px;}
+  .controls{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .controls button{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#e9eef5;
+    padding:9px 15px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;transition:.15s;}
+  .controls button:hover{background:rgba(255,255,255,.16);}
+  .controls button.play{background:var(--brand);border-color:var(--brand);color:#fff;min-width:120px;}
+  .controls button.play:hover{background:#ea580c;}
+  .controls button:disabled{opacity:.35;cursor:not-allowed;}
+  .count{color:#93a4bd;font-size:13px;font-weight:700;min-width:54px;text-align:center;}
+
+  .stage{position:relative;max-width:980px;margin:0 auto;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);}
+  .stage svg{display:block;width:100%;height:auto;}
+  .stage svg text{font-family:inherit;}
+
+  .caption{max-width:980px;margin:14px auto 0;text-align:center;color:#e9eef5;font-size:17px;font-weight:700;min-height:32px;}
+  .caption b{color:var(--brand-2);}
+
+  .hint{max-width:980px;margin:10px auto 0;text-align:center;color:#93a4bd;font-size:12px;}
+
+  /* scene elements */
+  .route{fill:none;stroke-width:3;stroke-dasharray:8 8;stroke-linecap:round;}
+  .route.req{stroke:rgba(249,115,22,.55);}
+  .route.resp{stroke:rgba(56,189,248,.55);}
+  .route.moving{stroke-dashoffset:-16;animation:flow 1s linear infinite;}
+  @keyframes flow{to{stroke-dashoffset:-16;}}
+  .route.lit{stroke-width:4;}
+
+  .ico{font-size:60px;}
+  .nm{font-size:14px;fill:#cbd5e1;font-weight:700;text-anchor:middle;}
+  .tag{opacity:0;transition:opacity .4s;}
+  .tag.show{opacity:1;}
+  .tag .ph{fill:#fff;rx:8;}
+
+  .node{opacity:.85;transition:.3s;}
+  .node.hl{opacity:1;}
+  .node.hl .ico{filter:drop-shadow(0 0 14px rgba(249,115,22,.7));}
+
+  .actor{opacity:0;transition:opacity .4s;}
+  .actor.show{opacity:1;}
+
+  /* animations */
+  .fly1{animation:fly1 1.1s cubic-bezier(.45,.05,.55,.95) forwards;}
+  .fly2{animation:fly2 1.1s cubic-bezier(.45,.05,.55,.95) forwards;}
+  .flysig{animation:flysig 1.4s cubic-bezier(.45,.05,.55,.95) forwards;}
+  .open{animation:openIt .7s ease forwards;}
+  @keyframes fly1{0%{transform:translate(170px,300px);}100%{transform:translate(470px,150px);}}
+  @keyframes fly2{0%{transform:translate(470px,150px);}100%{transform:translate(775px,300px);}}
+  @keyframes flysig{0%{transform:translate(775px,320px);}100%{transform:translate(175px,335px);}}
+  @keyframes openIt{0%{transform:translate(775px,300px) scale(1);}50%{transform:translate(775px,300px) scale(.92);}100%{transform:translate(775px,300px) scale(.86);}}
+
+  .spin{transform-box:fill-box;transform-origin:center;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .pulse{animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+
+  .pop{animation:pop .5s ease forwards;}
+  @keyframes pop{0%{opacity:0;transform:scale(.5);}60%{transform:scale(1.12);}100%{opacity:1;transform:scale(1);}}
+
+  /* GET vs POST comparison */
+  .cmp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px;}
+  @media(max-width:760px){.cmp-wrap{grid-template-columns:1fr;}}
+  .cmp-card{background:#fff;border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.28);overflow:hidden;border-top:6px solid var(--get);}
+  .cmp-card.post{border-top-color:var(--brand);}
+  .cmp-head{padding:16px 20px 6px;font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;}
+  .cmp-card.get .cmp-head{color:var(--get);} .cmp-card.post .cmp-head{color:var(--brand);}
+  .cmp-body{padding:6px 20px 14px;}
+  .cmp-scene{display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 0 4px;}
+  .cmp-ico{font-size:40px;}
+  .cmp-arrow{color:var(--ink-soft);font-size:22px;}
+  .cmp-item{display:flex;align-items:center;gap:8px;font-size:14px;margin:7px 0;color:var(--ink);}
+  .cmp-item .dot{width:9px;height:9px;border-radius:50%;}
+  .cmp-card.get .cmp-item .dot{background:var(--get);} .cmp-card.post .cmp-item .dot{background:var(--brand);}
+  .cmp-btn{margin:14px 20px 18px;width:calc(100% - 40px);padding:11px 0;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;cursor:pointer;transition:.15s;}
+  .cmp-card.get .cmp-btn{background:var(--get);} .cmp-card.get .cmp-btn:hover{background:#0284c7;}
+  .cmp-card.post .cmp-btn{background:var(--brand);} .cmp-card.post .cmp-btn:hover{background:#ea580c;}
+
+  .cmp-foot{max-width:980px;margin:16px auto 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+     border-radius:12px;padding:12px 16px;color:#cdd7e6;font-size:13px;}
+  .cmp-foot b{color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <div class="brand"><span class="logo">🚚</span> 一次通信，是怎么走的？<small>· 给产品经理的动画版 · 文字最少版</small></div>
+    <div class="tabs">
+      <button id="tbMain" class="active" onclick="switchScene('main')">📮 主流程</button>
+      <button id="tbCmp" onclick="switchScene('cmp')">⚔️ GET vs POST</button>
+    </div>
+  </div>
+
+  <!-- ============ 主流程 ============ -->
+  <section id="sceneMain">
+    <div class="player">
+      <div class="controls">
+        <button onclick="stepPrev()" id="btnPrev">⏮ 上一步</button>
+        <button class="play" id="btnPlay" onclick="togglePlay()">▶ 自动播</button>
+        <button onclick="stepNext()" id="btnNext">下一步 ⏭</button>
+        <button onclick="replay()">↺ 重播</button>
+        <span class="count" id="stepCount">1 / 7</span>
+      </div>
+
+      <div class="stage">
+        <svg viewBox="0 0 980 460" width="980" height="460" preserveAspectRatio="xMidYMid meet">
+          <!-- 航线 -->
+          <path id="rReq" class="route req" d="M 250 310 C 330 120, 630 120, 760 300"/>
+          <path id="rResp" class="route resp" d="M 760 345 C 630 425, 330 425, 250 345"/>
+
+          <!-- 手机 / 前端 -->
+          <g class="node" id="nodePhone" transform="translate(95,255)">
+            <text class="ico" x="36" y="46" text-anchor="middle">📱</text>
+            <text class="nm" x="36" y="86">手机 · 前端（你）</text>
+            <g id="btnOrder" class="tag pulse" style="opacity:1;">
+              <rect x="-8" y="98" width="88" height="34" rx="17" fill="#f97316"/>
+              <text x="36" y="121" text-anchor="middle" fill="#fff" font-size="15" font-weight="800" style="pointer-events:none;">✓ 下单</text>
+            </g>
+          </g>
+
+          <!-- 快递站 / 网络 -->
+          <g class="node" id="nodeHub" transform="translate(420,70)">
+            <text class="ico" x="58" y="54" text-anchor="middle">🏬</text>
+            <text class="nm" x="58" y="86">快递站 · 网络</text>
+          </g>
+
+          <!-- 仓库 / 服务器 -->
+          <g class="node" id="nodeWh" transform="translate(715,255)">
+            <text class="ico" x="58" y="46" text-anchor="middle">🏭</text>
+            <text class="nm" x="58" y="86">仓库 · 服务器</text>
+            <text id="gear" class="ico tag" x="118" y="30" style="font-size:34px;fill:#fbbf24;" transform="rotate(0 0 0)">⚙️</text>
+          </g>
+
+          <!-- 包裹（数据 + 面单） -->
+          <g id="gPkg" class="actor" style="transform:translate(170px,300px)">
+            <rect x="-24" y="-30" width="48" height="60" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="2"/>
+            <rect x="-5" y="-30" width="10" height="60" fill="#d97706"/>
+            <text class="tag" id="labJSON" x="34" y="0" fill="#fbbf24" font-size="16" font-weight="800">JSON</text>
+            <text class="tag" id="labURL" x="34" y="20" fill="#fb923c" font-size="12" font-weight="700">URL地址</text>
+            <text class="tag" id="labHdr" x="34" y="36" fill="#34d399" font-size="12" font-weight="700">Header·Token</text>
+          </g>
+
+          <!-- 签收单（响应） -->
+          <g id="gSig" class="actor" style="transform:translate(775px,320px)">
+            <rect x="-20" y="-26" width="40" height="52" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+            <text x="0" y="6" text-anchor="middle" font-size="17" font-weight="900" fill="#0284c7">✓</text>
+            <text class="tag" id="lab200" x="26" y="0" fill="#38bdf8" font-size="14" font-weight="800">200 OK</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="caption" id="caption"></div>
+      <div class="hint">👆 点「下一步」逐步推进，或点「自动播」让它自己走。想看名词就记住：包＝JSON，面单＝URL+Header，仓库＝服务器，签收单＝200 OK。</div>
+    </div>
+  </section>
+
+  <!-- ============ GET vs POST 对比 ============ -->
+  <section id="sceneCmp" style="display:none;">
+    <div class="cmp-wrap">
+      <div class="cmp-card get">
+        <div class="cmp-head"><span>📮</span> GET · 查 &nbsp;=&nbsp; 去快递柜取件</div>
+        <div class="cmp-body">
+          <div class="cmp-scene" id="getScene">
+            <span class="cmp-ico">🔢</span><span class="cmp-arrow">➜</span>
+            <span class="cmp-ico" id="getLocker" style="transition:.4s;">📮</span><span class="cmp-arrow">➜</span>
+            <span class="cmp-ico" id="getOut" style="opacity:.25;transition:.4s;">📦</span>
+          </div>
+          <div class="cmp-item"><span class="dot"></span>把「取件码（参数）」写在地址栏 URL 上</div>
+          <div class="cmp-item"><span class="dot"></span>没包裹（Body 空），拿的是「商品列表」</div>
+          <div class="cmp-item"><span class="dot"></span>明文可见 · 有长度限制 · 幂等（取一次不多一个）</div>
+        </div>
+        <button class="cmp-btn" onclick="playGet()">▶ 演示：去取件</button>
+      </div>
+
+      <div class="cmp-card post">
+        <div class="cmp-head"><span>🏪</span> POST · 增/改 &nbsp;=&nbsp; 去前台寄件</div>
+        <div class="cmp-body">
+          <div class="cmp-scene" id="postScene">
+            <span class="cmp-ico" id="postPkg" style="opacity:.25;transition:.4s;">📦</span>
+            <span class="cmp-arrow">➜</span>
+            <span class="cmp-ico" id="postCounter" style="transition:.4s;">🏪</span><span class="cmp-arrow">➜</span>
+            <span class="cmp-ico" id="postReceipt" style="opacity:.25;transition:.4s;">📄</span>
+          </div>
+          <div class="cmp-item"><span class="dot"></span>把「货物（数据）」放在包裹 Body 里</div>
+          <div class="cmp-item"><span class="dot"></span>Header 带 Token（验身）+ Body 是 JSON</div>
+          <div class="cmp-item"><span class="dot"></span>较安全 · 能传大体积 · 非幂等（寄一次多一个）</div>
+        </div>
+        <button class="cmp-btn" onclick="playPost()">▶ 演示：去寄件</button>
+      </div>
+    </div>
+    <div class="cmp-foot"><b>一句话记：</b>GET 是把"取件码"写在门上（看得见、有长度限制、查一次不变）；POST 是把"货"装进包里交给前台（看不见、量大、每寄一次多一单）。前端 90% 只用到 GET 和 POST。</div>
+  </section>
+
+</div>
+
+<script>
+  var STEPS = [
+    {cap:"点一下手机里的 <b>「下单」</b>按钮 👇", act:'idle'},
+    {cap:"生成了一个包裹：里面是数据（<b>JSON</b>），外面贴着面单（<b>URL</b>+<b>Header</b>）", act:'create'},
+    {cap:"包裹出发，飞过「<b>快递站＝网络</b>」", act:'fly1'},
+    {cap:"到达「<b>仓库＝服务器</b>」，开始拆包", act:'fly2'},
+    {cap:"服务器处理中…… <b>⚙️ 齿轮转起来</b>", act:'process'},
+    {cap:"仓库回传「<b>签收单 200 OK</b>」，飞回手机", act:'respond'},
+    {cap:"<b>✅ 一次通信完成！</b> 前端＝寄快递，后端＝回签收单", act:'done'}
+  ];
+  var cur = 0, playing = false, timer = null;
+
+  function $(id){ return document.getElementById(id); }
+  function tag(i,on){ var el=$('lab'+i); if(el) el.classList.toggle('show',on); }
+
+  function resetScene(){
+    // 包裹
+    var pkg=$('gPkg'); pkg.style.transform='translate(170px,300px)';
+    pkg.classList.remove('show','fly1','fly2','open');
+    tag('JSON',false); tag('URL',false); tag('Hdr',false);
+    // 签收单
+    var sig=$('gSig'); sig.style.transform='translate(775px,320px)';
+    sig.classList.remove('show','flysig'); tag('200',false);
+    // 节点高亮 / 齿轮
+    ['nodePhone','nodeHub','nodeWh'].forEach(function(id){ $(id).classList.remove('hl'); });
+    $('btnOrder').classList.remove('pulse'); $('gear').classList.remove('show','spin');
+    $('rReq').classList.remove('lit','moving'); $('rResp').classList.remove('lit','moving');
+  }
+
+  function applyAction(i){
+    var a=STEPS[i].act;
+    if(a==='idle'){ $('btnOrder').classList.remove('pulse'); $('btnOrder').style.opacity='1'; }
+    if(a==='create'){
+      $('btnOrder').classList.add('pulse');
+      $('gPkg').classList.add('show');
+      tag('JSON',true); tag('URL',true); tag('Hdr',true);
+    }
+    if(a==='fly1'){
+      $('gPkg').classList.add('show','fly1');
+      $('rReq').classList.add('lit','moving');
+      $('nodeHub').classList.add('hl');
+    }
+    if(a==='fly2'){
+      $('gPkg').classList.add('show','fly2');
+      $('rReq').classList.remove('moving');
+      $('nodeWh').classList.add('hl');
+    }
+    if(a==='process'){
+      $('gPkg').classList.add('open');
+      $('gear').classList.add('show','spin');
+      $('rReq').classList.remove('moving');
+    }
+    if(a==='respond'){
+      $('gSig').classList.add('show','flysig');
+      $('rResp').classList.add('lit','moving');
+      $('nodeWh').classList.add('hl');
+    }
+    if(a==='done'){
+      $('gSig').classList.add('show','flysig');
+      $('rResp').classList.remove('moving');
+      $('nodePhone').classList.add('hl');
+      $('btnOrder').classList.remove('pulse');
+    }
+  }
+
+  function renderStep(k){
+    cur=k; resetScene();
+    for(var i=0;i<=k;i++) applyAction(i);
+    $('caption').innerHTML=STEPS[k].cap;
+    $('stepCount').textContent=(k+1)+' / '+STEPS.length;
+    $('btnPrev').disabled=(k===0);
+    $('btnNext').disabled=(k===STEPS.length-1);
+  }
+  function stepNext(){ if(playing) return; if(cur<STEPS.length-1){ renderStep(cur+1); } }
+  function stepPrev(){ if(playing) return; if(cur>0){ renderStep(cur-1); } }
+  function replay(){ stopPlay(); renderStep(0); }
+
+  function togglePlay(){
+    if(playing){ stopPlay(); } else { startPlay(); }
+  }
+  function startPlay(){
+    if(cur>=STEPS.length-1){ renderStep(0); }
+    playing=true; $('btnPlay').textContent='⏸ 暂停';
+    timer=setInterval(function(){ if(cur<STEPS.length-1){ stepNext(); } else { stopPlay(); } }, 2200);
+  }
+  function stopPlay(){
+    playing=false; $('btnPlay').textContent='▶ 自动播';
+    if(timer){ clearInterval(timer); timer=null; }
+  }
+
+  function switchScene(which){
+    var main=which==='main';
+    $('sceneMain').style.display=main?'':'none';
+    $('sceneCmp').style.display=main?'none':'';
+    $('tbMain').classList.toggle('active',main);
+    $('tbCmp').classList.toggle('active',!main);
+    stopPlay();
+  }
+
+  /* GET vs POST 演示 */
+  function playGet(){
+    var locker=$('getLocker'), out=$('getOut');
+    locker.style.transform='scale(1.15)';
+    out.style.opacity='1'; out.style.transform='translateY(-6px)';
+    setTimeout(function(){ locker.style.transform='scale(1)'; out.style.opacity='0.25'; out.style.transform='none'; },1200);
+  }
+  function playPost(){
+    var pkg=$('postPkg'), receipt=$('postReceipt'), counter=$('postCounter');
+    pkg.style.opacity='1'; counter.style.transform='scale(1.12)';
+    setTimeout(function(){ receipt.style.opacity='1'; receipt.style.transform='translateY(-6px)'; pkg.style.opacity='0.25'; counter.style.transform='scale(1)'; },500);
+    setTimeout(function(){ receipt.style.opacity='0.25'; receipt.style.transform='none'; },1300);
+  }
+
+  renderStep(0);
+</script>
+</body>
+</html>
