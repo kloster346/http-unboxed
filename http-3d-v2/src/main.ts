@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createScenarioState } from './core/ScenarioState';
 import { createOverlay } from './ui/overlay';
+import { createIntro } from './scenes/intro';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('缺失 #root 挂载点');
@@ -32,23 +33,18 @@ const dir = new THREE.DirectionalLight(0xffffff, 1.4);
 dir.position.set(3, 4, 5);
 scene.add(dir);
 
-// 占位"包裹"：科技蓝发光多面体
-const geo = new THREE.IcosahedronGeometry(1, 0);
-const mat = new THREE.MeshStandardMaterial({
-  color: 0x00bfff,
-  emissive: 0x005a8f,
-  metalness: 0.35,
-  roughness: 0.4,
-});
-const packet = new THREE.Mesh(geo, mat);
-scene.add(packet);
-
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const state = createScenarioState();
+createOverlay(root, state);
+const intro = createIntro(scene, camera, controls, root);
+
+const clock = new THREE.Clock();
 const animate = () => {
   requestAnimationFrame(animate);
-  packet.rotation.y += 0.003;
+  const delta = clock.getDelta();
+  intro.update(delta);
   controls.update();
   renderer.render(scene, camera);
 };
@@ -59,7 +55,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// 教学流程状态机 + UI 覆盖层
-const state = createScenarioState();
-createOverlay(root, state);
