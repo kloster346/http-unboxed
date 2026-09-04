@@ -5,6 +5,7 @@ import { createOverlay } from './ui/overlay';
 import { createIntro } from './scenes/intro';
 import { createAssemble } from './scenes/assemble';
 import { createStandardize } from './scenes/standardize';
+import { createRoutes } from './scenes/routes';
 import { clearGroup, type SceneController } from './scenes/types';
 
 const root = document.getElementById('root');
@@ -52,6 +53,9 @@ const mount = (id: SceneId) => {
       break;
     case 'standardize':
       current = createStandardize(content, root, state);
+      break;
+    case 'routes':
+      current = createRoutes(content, root, state);
       break;
     default:
       current = { update: () => {} };
