@@ -3,6 +3,7 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js
 import type { SceneController } from './types';
 import { easeInOutCubic } from './ease';
 import { makeTextSprite } from './sprites';
+import { createShippingBoxModel } from '../assets/createShippingBoxModel';
 
 export function createIntro(
   parent: THREE.Group,
@@ -14,16 +15,7 @@ export function createIntro(
   // ---- 半透快递箱 + 边缘发光 ----
   const group = new THREE.Group();
   const boxGeo = new THREE.BoxGeometry(1.8, 1.6, 1.8);
-  const boxMat = new THREE.MeshPhysicalMaterial({
-    color: 0x0aa6c9,
-    transparent: true,
-    opacity: 0.32,
-    metalness: 0.1,
-    roughness: 0.35,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-  });
-  const box = new THREE.Mesh(boxGeo, boxMat);
+  const box = createShippingBoxModel();
   group.add(box);
   const edges = new THREE.LineSegments(
     new THREE.EdgesGeometry(boxGeo),
