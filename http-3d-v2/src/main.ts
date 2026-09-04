@@ -12,6 +12,7 @@ import { createStandardize } from './scenes/standardize';
 import { createRoutes } from './scenes/routes';
 import { createRespond } from './scenes/respond';
 import { clearGroup, type SceneController } from './scenes/types';
+import { createShippingBoxEnvironment } from './assets/createShippingBoxModel';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('缺失 #root 挂载点');
@@ -33,6 +34,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
 root.appendChild(renderer.domElement);
 
+scene.environment = createShippingBoxEnvironment(renderer);
 scene.add(new THREE.HemisphereLight(0x3a6ff0, 0x0a0f1e, 1.2));
 const dir = new THREE.DirectionalLight(0xffffff, 1.4);
 dir.position.set(3, 4, 5);

@@ -17,6 +17,7 @@ export function createIntro(
   const boxGeo = new THREE.BoxGeometry(1.8, 1.6, 1.8);
   const box = createShippingBoxModel();
   group.add(box);
+  box.scale.setScalar(1.25);
   const edges = new THREE.LineSegments(
     new THREE.EdgesGeometry(boxGeo),
     new THREE.LineBasicMaterial({ color: 0x00bfff, transparent: true, opacity: 0.9 }),
