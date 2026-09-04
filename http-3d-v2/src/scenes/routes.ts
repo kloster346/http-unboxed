@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { ScenarioState } from '../core/ScenarioState';
 import type { SceneController } from './types';
+import { forBoss, type CaptionPair } from '../core/captions';
 
 type FocusKey = 'get' | 'post';
 
-const INFO: Record<FocusKey, { tech: string; meta: string }> = {
+const INFO: Record<FocusKey, CaptionPair> = {
   get: { tech: 'GET：从服务器获取数据（只读、无 Body）', meta: '去快递柜取件（查）' },
   post: { tech: 'POST：向服务器提交数据（可带 Body）', meta: '去前台寄件（增/改）' },
 };
@@ -76,7 +77,6 @@ export function createRoutes(
     return { mesh, glow, x: -2.4, dir: 1, speed: full ? 1.2 : 1.7 };
   }
 
-  // 传送带带面 + 滚动条纹
   const belts: { mesh: THREE.Mesh; stripes: THREE.Mesh[]; z: number }[] = [];
   function buildBelt(color: number, y: number, z: number) {
     const belt = new THREE.Mesh(
@@ -98,11 +98,9 @@ export function createRoutes(
   buildBelt(0x33bbff, 0.6, -1.3);
   buildBelt(0xff8a2a, 0.6, 1.3);
 
-  // GET（左，轻快空箱） / POST（右，厚重满箱）
   const getPack = buildPackage(0x9fd8ff, false, 1.0, -1.3);
   const postPack = buildPackage(0xffb347, true, 1.0, 1.3);
 
-  // DOM：说明面板 + 切换按钮
   const panel = document.createElement('div');
   panel.className = 'routes-panel';
   panel.style.cssText =
@@ -127,7 +125,7 @@ export function createRoutes(
 
   let focus: FocusKey = 'get';
   const applyFocus = () => {
-    panel.textContent = state.bossMode ? INFO[focus].meta : INFO[focus].tech;
+    panel.textContent = forBoss(INFO[focus], state.bossMode);
     const getScale = focus === 'get' ? 1 : 0.7;
     const postScale = focus === 'post' ? 1 : 0.7;
     getPack.glow.scale.setScalar(0.8 * getScale);
@@ -147,14 +145,12 @@ export function createRoutes(
 
   return {
     update(delta) {
-      // 条纹滚动
       for (const belt of belts) {
         for (const s of belt.stripes) {
           s.position.x += delta * 1.5;
           if (s.position.x > 2.8) s.position.x = -2.8;
         }
       }
-      // 包裹循环移动（GET/POST）
       const movePack = (p: Package) => {
         p.x += p.dir * p.speed * delta;
         if (p.x > 2.4) p.dir = -1;
@@ -167,7 +163,7 @@ export function createRoutes(
 
       if (state.bossMode !== lastBoss) {
         lastBoss = state.bossMode;
-        panel.textContent = state.bossMode ? INFO[focus].meta : INFO[focus].tech;
+        panel.textContent = forBoss(INFO[focus], state.bossMode);
       }
     },
     dispose() {

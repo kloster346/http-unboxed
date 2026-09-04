@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import type { ScenarioState } from '../core/ScenarioState';
 import type { SceneController } from './types';
+import { forBoss, type CaptionPair } from '../core/captions';
 
-const FIELDS = [
-  { key: 'user', meta: '用户名', value: 'xiaoming' },
-  { key: 'price', meta: '价格', value: '99.90' },
-  { key: 'id', meta: '订单号', value: '1001' },
+const FIELDS: (CaptionPair & { value: string })[] = [
+  { tech: 'user', meta: '用户名', value: 'xiaoming' },
+  { tech: 'price', meta: '价格', value: '99.90' },
+  { tech: 'id', meta: '订单号', value: '1001' },
 ];
 
 export function createStandardize(
@@ -56,7 +57,7 @@ export function createStandardize(
   pts.position.set(0, 1.2, 0);
   group.add(pts);
 
-  // DOM JSON 面板（逐条浮现）
+  // DOM JSON 面板（逐条从下到上浮现）
   const panel = document.createElement('div');
   panel.className = 'json-panel';
   panel.style.cssText =
@@ -69,14 +70,13 @@ export function createStandardize(
     const row = document.createElement('div');
     row.className = 'json-row';
     row.style.cssText =
-      'opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s;margin:4px 0;font-size:15px';
+      'opacity:0;transform:translateY(24px);transition:opacity .5s,transform .5s;margin:4px 0;font-size:15px';
     panel.appendChild(row);
     return { row, field: f };
   });
 
   const renderRow = (row: HTMLElement, f: (typeof FIELDS)[number]) => {
-    const key = state.bossMode ? f.meta : f.key;
-    row.textContent = `"${key}": "${f.value}"`;
+    row.textContent = `"${forBoss(f, state.bossMode)}": "${f.value}"`;
   };
   rows.forEach((r) => renderRow(r.row, r.field));
 
@@ -87,7 +87,6 @@ export function createStandardize(
 
   return {
     update(delta) {
-      // 粒子流动
       const p = geo.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < count; i++) {
         let y = p.getY(i) + delta * 0.25;
@@ -96,7 +95,6 @@ export function createStandardize(
       }
       p.needsUpdate = true;
 
-      // JSON 卡片逐条浮现
       t += delta;
       if (shown < rows.length && t >= shown * INTERVAL) {
         rows[shown].row.style.opacity = '1';
@@ -104,7 +102,6 @@ export function createStandardize(
         shown += 1;
       }
 
-      // 老板模式字段切换
       if (state.bossMode !== lastBoss) {
         lastBoss = state.bossMode;
         rows.forEach((r) => renderRow(r.row, r.field));

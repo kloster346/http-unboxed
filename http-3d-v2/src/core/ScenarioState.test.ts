@@ -71,13 +71,14 @@ describe('ScenarioState', () => {
     expect(s.playing).toBe(false);
   });
 
-  it('replay 回到第一幕', () => {
+  it('replay 回到第一幕并停止播放', () => {
     const s = createScenarioState();
     s.goto(4);
-    expect(s.index).toBe(4);
+    s.play();
     s.replay();
     expect(s.index).toBe(0);
     expect(s.sceneId).toBe('intro');
+    expect(s.playing).toBe(false);
   });
 
   it('可从自定义初始幕/老板模式/播放态创建', () => {

@@ -1,9 +1,5 @@
 import type { ScenarioState } from '../core/ScenarioState';
 
-export interface Overlay {
-  update(): void;
-}
-
 function el(tag: string, className = '', text = ''): HTMLElement {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -11,7 +7,7 @@ function el(tag: string, className = '', text = ''): HTMLElement {
   return node;
 }
 
-export function createOverlay(root: HTMLElement, state: ScenarioState): Overlay {
+export function createOverlay(root: HTMLElement, state: ScenarioState): void {
   const layer = el('div', 'overlay');
 
   // 右上：老板模式开关
@@ -71,5 +67,4 @@ export function createOverlay(root: HTMLElement, state: ScenarioState): Overlay 
   });
 
   update();
-  return { update };
 }

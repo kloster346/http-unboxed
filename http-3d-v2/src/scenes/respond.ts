@@ -2,28 +2,8 @@ import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { ScenarioState } from '../core/ScenarioState';
 import type { SceneController } from './types';
-
-function makeTextSprite(text: string, color: string, sw: number, sh: number): THREE.Sprite {
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 160;
-  const ctx = c.getContext('2d');
-  if (ctx) {
-    ctx.font = 'bold 52px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 20;
-    ctx.fillText(text, 256, 80);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sp.scale.set(sw, sh, 1);
-  return sp;
-}
-
-const EASE = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+import { easeInOutCubic } from './ease';
+import { makeTextSprite } from './sprites';
 
 export function createRespond(
   parent: THREE.Group,
@@ -64,7 +44,7 @@ export function createRespond(
   group.add(box);
 
   // 回执单（弹出）
-  const receipt = makeTextSprite('{"status":"success"}', '#9fffcf', 4.4, 1.3);
+  const receipt = makeTextSprite({ text: '{"status":"success"}', color: '#9fffcf', scale: [4.4, 1.3] }).sprite;
   receipt.position.set(0, 0.4, 1.6);
   receipt.visible = false;
   group.add(receipt);
@@ -76,7 +56,7 @@ export function createRespond(
   );
   phone.position.set(3.4, 1.6, 0.6);
   group.add(phone);
-  const screenText = makeTextSprite('已收货', '#7fffc4', 3.6, 1.2);
+  const screenText = makeTextSprite({ text: '已收货', color: '#7fffc4', scale: [3.6, 1.2] }).sprite;
   screenText.position.set(3.4, 1.6, 0.75);
   screenText.visible = false;
   group.add(screenText);
@@ -123,12 +103,16 @@ export function createRespond(
         receipt.position.y = 0.4 + Math.min((elapsed - 1.2) * 0.4, 1.0);
       }
 
-      // 阶段3：镜头特写回执 + 手机已收货
+      // 阶段3：镜头特写回执 + 手机已收货（缓动期间禁用阻尼）
       if (elapsed >= 2.2) {
-        const t = EASE(Math.min((elapsed - 2.2) / 1.6, 1));
+        const t = easeInOutCubic(Math.min((elapsed - 2.2) / 1.6, 1));
         camera.position.lerpVectors(camStart, camEnd, t);
         controls.target.set(0, 1.0, 1.6);
+        controls.enableDamping = false;
         controls.update();
+      }
+      if (elapsed >= 3.8 && !controls.enableDamping) {
+        controls.enableDamping = true;
       }
       if (elapsed >= 2.6 && !shownPhone) {
         shownPhone = true;

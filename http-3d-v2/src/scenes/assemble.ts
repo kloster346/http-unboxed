@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import type { ScenarioState } from '../core/ScenarioState';
 import type { SceneController } from './types';
+import { forBoss, type CaptionPair } from '../core/captions';
+import { makeTextSprite } from './sprites';
 
 interface Block {
   key: string;
@@ -8,7 +10,7 @@ interface Block {
   meta: string;
   color: number;
   pos: [number, number, number];
-  desc: { tech: string; meta: string };
+  desc: CaptionPair;
 }
 
 const BLOCKS: Block[] = [
@@ -38,30 +40,6 @@ const BLOCKS: Block[] = [
   },
 ];
 
-function makeLabel(text: string) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  const tex = new THREE.CanvasTexture(canvas);
-  const draw = (t: string) => {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, 256, 128);
-    ctx.font = 'bold 54px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(230,240,255,0.98)';
-    ctx.shadowColor = 'rgba(0,191,255,0.9)';
-    ctx.shadowBlur = 16;
-    ctx.fillText(t, 128, 64);
-    tex.needsUpdate = true;
-  };
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sprite.scale.set(1.7, 0.85, 1);
-  draw(text);
-  return { sprite, setText: draw };
-}
-
 export function createAssemble(
   parent: THREE.Group,
   camera: THREE.PerspectiveCamera,
@@ -74,7 +52,6 @@ export function createAssemble(
   const holders: THREE.Mesh[] = [];
   const labels: { setText: (t: string) => void }[] = [];
 
-  // 解释气泡（DOM）
   const infoEl = document.createElement('div');
   infoEl.className = 'hud-info';
   infoEl.style.cssText =
@@ -107,7 +84,7 @@ export function createAssemble(
     edges.position.set(b.pos[0], b.pos[1], b.pos[2]);
     group.add(edges);
 
-    const label = makeLabel(b.label);
+    const label = makeTextSprite({ text: b.label, color: '#e6f0ff', scale: [1.7, 0.85], fontSize: 54 });
     label.sprite.position.set(b.pos[0], b.pos[1] + 0.85, b.pos[2]);
     group.add(label.sprite);
     labels.push(label);
@@ -117,37 +94,31 @@ export function createAssemble(
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const setInfo = (b: Block | null) => {
-    if (!b) {
-      infoEl.style.display = 'none';
-      return;
-    }
-    infoEl.style.display = 'block';
-    infoEl.textContent = state.bossMode
-      ? `${b.meta}：${b.desc.meta}`
-      : `${b.label}：${b.desc.tech}`;
-  };
 
-  const onMove = (e: PointerEvent) => {
-    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  const resolve = (cx: number, cy: number) => {
+    pointer.x = (cx / window.innerWidth) * 2 - 1;
+    pointer.y = -(cy / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(holders, false);
     holders.forEach((h) => h.scale.setScalar(1));
     if (hits.length) {
       const obj = hits[0].object as THREE.Mesh;
       obj.scale.setScalar(1.2);
-      setInfo(obj.userData.block as Block);
+      const b = obj.userData.block as Block;
+      infoEl.style.display = 'block';
+      infoEl.textContent = `${forBoss({ meta: b.meta, tech: b.label }, state.bossMode)}：${forBoss(b.desc, state.bossMode)}`;
     } else {
-      setInfo(null);
+      infoEl.style.display = 'none';
     }
   };
+  const onMove = (e: PointerEvent) => resolve(e.clientX, e.clientY);
+  const onClick = (e: MouseEvent) => resolve(e.clientX, e.clientY);
   window.addEventListener('pointermove', onMove);
+  window.addEventListener('click', onClick);
 
   let lastBoss = state.bossMode;
-  const refreshLabels = () => {
-    BLOCKS.forEach((b, i) => labels[i].setText(state.bossMode ? b.meta : b.label));
-  };
+  const refreshLabels = () =>
+    BLOCKS.forEach((b, i) => labels[i].setText(forBoss({ meta: b.meta, tech: b.label }, state.bossMode)));
   refreshLabels();
 
   return {
@@ -159,6 +130,7 @@ export function createAssemble(
     },
     dispose() {
       window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('click', onClick);
       infoEl.remove();
     },
   };

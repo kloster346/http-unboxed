@@ -90,6 +90,7 @@ export function createScenarioState(opts: ScenarioStateOptions = {}): ScenarioSt
     },
     replay() {
       index = 0;
+      playing = false;
     },
     goto(i: number) {
       index = clamp(i, 0, SCENE_TOTAL - 1);

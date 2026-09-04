@@ -1,30 +1,8 @@
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { SceneController } from './types';
-
-const EASE_IN_OUT_CUBIC = (t: number) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-function makeQuestionSprite(): THREE.Sprite {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.font = 'bold 96px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(160,230,255,0.95)';
-    ctx.shadowColor = 'rgba(0,191,255,0.9)';
-    ctx.shadowBlur = 18;
-    ctx.fillText('?', 64, 66);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-  const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(0.9, 0.9, 1);
-  return sprite;
-}
+import { easeInOutCubic } from './ease';
+import { makeTextSprite } from './sprites';
 
 export function createIntro(
   parent: THREE.Group,
@@ -69,7 +47,14 @@ export function createIntro(
   );
   group.add(dots);
 
-  const question = makeQuestionSprite();
+  const question = makeTextSprite({
+    text: '?',
+    color: '#a0e6ff',
+    width: 128,
+    height: 128,
+    fontSize: 96,
+    scale: [0.9, 0.9],
+  }).sprite;
   question.position.y = 0.1;
   group.add(question);
 
@@ -115,7 +100,7 @@ export function createIntro(
     'padding:12px 28px;font-size:16px;cursor:pointer;box-shadow:0 0 20px rgba(0,191,255,0.6)';
   container.appendChild(btn);
 
-  // ---- 镜头缓动（Ease In Out，>=1.5s）----
+  // ---- 镜头缓动（Ease In Out，>=1.5s；缓动期间禁用阻尼）----
   const camStart = camera.position.clone();
   const camEnd = new THREE.Vector3(0, 1.2, 3.2);
   const DURATION = 1.8;
@@ -143,10 +128,14 @@ export function createIntro(
 
       if (active && tween < 1) {
         tween = Math.min(tween + delta / DURATION, 1);
-        const e = EASE_IN_OUT_CUBIC(tween);
+        const e = easeInOutCubic(tween);
         camera.position.lerpVectors(camStart, camEnd, e);
         controls.target.set(0, 1.2, 0);
+        controls.enableDamping = false;
         controls.update();
+      }
+      if (tween >= 1 && controls.enableDamping === false) {
+        controls.enableDamping = true;
       }
 
       if (active && tween >= 1 && !completed) {
