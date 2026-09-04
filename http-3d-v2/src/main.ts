@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { createScenarioState } from './core/ScenarioState';
+import { createOverlay } from './ui/overlay';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('缺失 #root 挂载点');
@@ -57,3 +59,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// 教学流程状态机 + UI 覆盖层
+const state = createScenarioState();
+createOverlay(root, state);
