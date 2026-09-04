@@ -4,6 +4,7 @@ import { createScenarioState, type SceneId } from './core/ScenarioState';
 import { createOverlay } from './ui/overlay';
 import { createIntro } from './scenes/intro';
 import { createAssemble } from './scenes/assemble';
+import { createStandardize } from './scenes/standardize';
 import { clearGroup, type SceneController } from './scenes/types';
 
 const root = document.getElementById('root');
@@ -48,6 +49,9 @@ const mount = (id: SceneId) => {
       break;
     case 'assemble':
       current = createAssemble(content, camera, root, state);
+      break;
+    case 'standardize':
+      current = createStandardize(content, root, state);
       break;
     default:
       current = { update: () => {} };
