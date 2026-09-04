@@ -1,9 +1,6 @@
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-
-export interface IntroController {
-  update(delta: number): void;
-}
+import type { SceneController } from './types';
 
 const EASE_IN_OUT_CUBIC = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -30,11 +27,12 @@ function makeQuestionSprite(): THREE.Sprite {
 }
 
 export function createIntro(
-  scene: THREE.Scene,
+  parent: THREE.Group,
   camera: THREE.PerspectiveCamera,
   controls: OrbitControls,
   container: HTMLElement,
-): IntroController {
+  onComplete: () => void,
+): SceneController {
   // ---- 半透快递箱 + 边缘发光 ----
   const group = new THREE.Group();
   const boxGeo = new THREE.BoxGeometry(1.8, 1.6, 1.8);
@@ -55,7 +53,7 @@ export function createIntro(
   );
   group.add(edges);
 
-  // ---- 内部 "?" 粒子点云 + 中心 "?" 悬浮 ----
+  // ---- 内部 "?" 粒子点云 + 中心 "?" ----
   const count = 220;
   const pos = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
@@ -76,7 +74,7 @@ export function createIntro(
   group.add(question);
 
   group.position.set(0, 1.2, 0);
-  scene.add(group);
+  parent.add(group);
 
   // ---- 拆包碎片（初始隐藏）----
   const shards = new THREE.Group();
@@ -106,7 +104,7 @@ export function createIntro(
     shards.add(sh);
     shardList.push(sh);
   }
-  scene.add(shards);
+  parent.add(shards);
 
   // ---- [开始探索] 按钮 ----
   const btn = document.createElement('button');
@@ -123,6 +121,7 @@ export function createIntro(
   const DURATION = 1.8;
   let tween = 0;
   let active = false;
+  let completed = false;
 
   const startExplosion = () => {
     group.visible = false;
@@ -150,6 +149,11 @@ export function createIntro(
         controls.update();
       }
 
+      if (active && tween >= 1 && !completed) {
+        completed = true;
+        onComplete();
+      }
+
       if (shards.visible) {
         for (let i = 0; i < shardList.length; i++) {
           const sh = shardList[i];
@@ -162,6 +166,9 @@ export function createIntro(
           m.opacity = Math.max(m.opacity - delta * 0.7, 0);
         }
       }
+    },
+    dispose() {
+      btn.remove();
     },
   };
 }

@@ -1,24 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createScenarioState } from './core/ScenarioState';
+import { createScenarioState, type SceneId } from './core/ScenarioState';
 import { createOverlay } from './ui/overlay';
 import { createIntro } from './scenes/intro';
+import { createAssemble } from './scenes/assemble';
+import { clearGroup, type SceneController } from './scenes/types';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('缺失 #root 挂载点');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0f1e);
-// 数据网格地面（氛围）
 const grid = new THREE.GridHelper(20, 20, 0x1d2b5e, 0x101a3a);
 scene.add(grid);
 
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100,
-);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 2, 6);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -27,7 +23,6 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x0a0f1e);
 root.appendChild(renderer.domElement);
 
-// 灯光
 scene.add(new THREE.HemisphereLight(0x3a6ff0, 0x0a0f1e, 1.2));
 const dir = new THREE.DirectionalLight(0xffffff, 1.4);
 dir.position.set(3, 4, 5);
@@ -38,13 +33,40 @@ controls.enableDamping = true;
 
 const state = createScenarioState();
 createOverlay(root, state);
-const intro = createIntro(scene, camera, controls, root);
+
+// 场景宿主：按 state.sceneId 切换展示对应幕
+const content = new THREE.Group();
+scene.add(content);
+let current: SceneController | null = null;
+
+const mount = (id: SceneId) => {
+  current?.dispose?.();
+  clearGroup(content);
+  switch (id) {
+    case 'intro':
+      current = createIntro(content, camera, controls, root, () => state.advance());
+      break;
+    case 'assemble':
+      current = createAssemble(content, camera, root, state);
+      break;
+    default:
+      current = { update: () => {} };
+      break;
+  }
+};
+
+let lastScene = state.sceneId;
+mount(state.sceneId);
 
 const clock = new THREE.Clock();
 const animate = () => {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
-  intro.update(delta);
+  if (state.sceneId !== lastScene) {
+    lastScene = state.sceneId;
+    mount(state.sceneId);
+  }
+  current?.update?.(delta);
   controls.update();
   renderer.render(scene, camera);
 };
